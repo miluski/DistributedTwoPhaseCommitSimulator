@@ -1,0 +1,226 @@
+networks:
+  twopc:
+    driver: bridge
+
+services:
+  coordinator:
+    build:
+      context: ./backend
+      dockerfile: coordinator/Dockerfile
+    container_name: coordinator
+    ports:
+      - '8443:8443'
+    environment:
+      SERVER_PORT: 8443
+      SSL_KEYSTORE_PATH: /run/secrets/coordinator-keystore
+      SSL_KEYSTORE_PASSWORD: ${COORDINATOR_KEYSTORE_PASSWORD}
+      JAVA_TOOL_OPTIONS: >-
+        -Djavax.net.ssl.trustStore=/run/secrets/trust-store
+        -Djavax.net.ssl.trustStorePassword=${COORDINATOR_KEYSTORE_PASSWORD}
+        -Djavax.net.ssl.trustStoreType=PKCS12
+    secrets:
+      - coordinator-keystore
+      - trust-store
+    networks:
+      - twopc
+    healthcheck:
+      test: ['CMD', 'curl', '-k', '-f', 'https://localhost:8443/actuator/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  participant-1:
+    build:
+      context: ./backend
+      dockerfile: participant/Dockerfile
+    container_name: participant-1
+    ports:
+      - '8444:8444'
+    environment:
+      SERVER_PORT: 8444
+      SERVER_ID: server-1
+      COORDINATOR_URL: https://coordinator:8443
+      PARTICIPANT_HOST: participant-1
+      PARTICIPANT_PEERS: https://participant-1:8444,https://participant-2:8445,https://participant-3:8446,https://participant-4:8447,https://participant-5:8448,https://participant-6:8449
+      SSL_KEYSTORE_PATH: /run/secrets/participant-keystore
+      SSL_KEYSTORE_PASSWORD: ${PARTICIPANT_KEYSTORE_PASSWORD}
+      JAVA_TOOL_OPTIONS: >-
+        -Djavax.net.ssl.trustStore=/run/secrets/trust-store
+        -Djavax.net.ssl.trustStorePassword=${PARTICIPANT_KEYSTORE_PASSWORD}
+        -Djavax.net.ssl.trustStoreType=PKCS12
+    secrets:
+      - participant-keystore
+      - trust-store
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - twopc
+
+  participant-2:
+    build:
+      context: ./backend
+      dockerfile: participant/Dockerfile
+    container_name: participant-2
+    ports:
+      - '8445:8445'
+    environment:
+      SERVER_PORT: 8445
+      SERVER_ID: server-2
+      COORDINATOR_URL: https://coordinator:8443
+      PARTICIPANT_HOST: participant-2
+      PARTICIPANT_PEERS: https://participant-1:8444,https://participant-2:8445,https://participant-3:8446,https://participant-4:8447,https://participant-5:8448,https://participant-6:8449
+      SSL_KEYSTORE_PATH: /run/secrets/participant-keystore
+      SSL_KEYSTORE_PASSWORD: ${PARTICIPANT_KEYSTORE_PASSWORD}
+      JAVA_TOOL_OPTIONS: >-
+        -Djavax.net.ssl.trustStore=/run/secrets/trust-store
+        -Djavax.net.ssl.trustStorePassword=${PARTICIPANT_KEYSTORE_PASSWORD}
+        -Djavax.net.ssl.trustStoreType=PKCS12
+    secrets:
+      - participant-keystore
+      - trust-store
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - twopc
+
+  participant-3:
+    build:
+      context: ./backend
+      dockerfile: participant/Dockerfile
+    container_name: participant-3
+    ports:
+      - '8446:8446'
+    environment:
+      SERVER_PORT: 8446
+      SERVER_ID: server-3
+      COORDINATOR_URL: https://coordinator:8443
+      PARTICIPANT_HOST: participant-3
+      PARTICIPANT_PEERS: https://participant-1:8444,https://participant-2:8445,https://participant-3:8446,https://participant-4:8447,https://participant-5:8448,https://participant-6:8449
+      SSL_KEYSTORE_PATH: /run/secrets/participant-keystore
+      SSL_KEYSTORE_PASSWORD: ${PARTICIPANT_KEYSTORE_PASSWORD}
+      JAVA_TOOL_OPTIONS: >-
+        -Djavax.net.ssl.trustStore=/run/secrets/trust-store
+        -Djavax.net.ssl.trustStorePassword=${PARTICIPANT_KEYSTORE_PASSWORD}
+        -Djavax.net.ssl.trustStoreType=PKCS12
+    secrets:
+      - participant-keystore
+      - trust-store
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - twopc
+
+  participant-4:
+    build:
+      context: ./backend
+      dockerfile: participant/Dockerfile
+    container_name: participant-4
+    ports:
+      - '8447:8447'
+    environment:
+      SERVER_PORT: 8447
+      SERVER_ID: server-4
+      COORDINATOR_URL: https://coordinator:8443
+      PARTICIPANT_HOST: participant-4
+      PARTICIPANT_PEERS: https://participant-1:8444,https://participant-2:8445,https://participant-3:8446,https://participant-4:8447,https://participant-5:8448,https://participant-6:8449
+      SSL_KEYSTORE_PATH: /run/secrets/participant-keystore
+      SSL_KEYSTORE_PASSWORD: ${PARTICIPANT_KEYSTORE_PASSWORD}
+      JAVA_TOOL_OPTIONS: >-
+        -Djavax.net.ssl.trustStore=/run/secrets/trust-store
+        -Djavax.net.ssl.trustStorePassword=${PARTICIPANT_KEYSTORE_PASSWORD}
+        -Djavax.net.ssl.trustStoreType=PKCS12
+    secrets:
+      - participant-keystore
+      - trust-store
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - twopc
+
+  participant-5:
+    build:
+      context: ./backend
+      dockerfile: participant/Dockerfile
+    container_name: participant-5
+    ports:
+      - '8448:8448'
+    environment:
+      SERVER_PORT: 8448
+      SERVER_ID: server-5
+      COORDINATOR_URL: https://coordinator:8443
+      PARTICIPANT_HOST: participant-5
+      PARTICIPANT_PEERS: https://participant-1:8444,https://participant-2:8445,https://participant-3:8446,https://participant-4:8447,https://participant-5:8448,https://participant-6:8449
+      SSL_KEYSTORE_PATH: /run/secrets/participant-keystore
+      SSL_KEYSTORE_PASSWORD: ${PARTICIPANT_KEYSTORE_PASSWORD}
+      JAVA_TOOL_OPTIONS: >-
+        -Djavax.net.ssl.trustStore=/run/secrets/trust-store
+        -Djavax.net.ssl.trustStorePassword=${PARTICIPANT_KEYSTORE_PASSWORD}
+        -Djavax.net.ssl.trustStoreType=PKCS12
+    secrets:
+      - participant-keystore
+      - trust-store
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - twopc
+
+  participant-6:
+    build:
+      context: ./backend
+      dockerfile: participant/Dockerfile
+    container_name: participant-6
+    ports:
+      - '8449:8449'
+    environment:
+      SERVER_PORT: 8449
+      SERVER_ID: server-6
+      COORDINATOR_URL: https://coordinator:8443
+      PARTICIPANT_HOST: participant-6
+      PARTICIPANT_PEERS: https://participant-1:8444,https://participant-2:8445,https://participant-3:8446,https://participant-4:8447,https://participant-5:8448,https://participant-6:8449
+      SSL_KEYSTORE_PATH: /run/secrets/participant-keystore
+      SSL_KEYSTORE_PASSWORD: ${PARTICIPANT_KEYSTORE_PASSWORD}
+      JAVA_TOOL_OPTIONS: >-
+        -Djavax.net.ssl.trustStore=/run/secrets/trust-store
+        -Djavax.net.ssl.trustStorePassword=${PARTICIPANT_KEYSTORE_PASSWORD}
+        -Djavax.net.ssl.trustStoreType=PKCS12
+    secrets:
+      - participant-keystore
+      - trust-store
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - twopc
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - '3000:3000'
+    secrets:
+      - frontend-cert
+      - frontend-key
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    networks:
+      - twopc
+
+secrets:
+  coordinator-keystore:
+    file: ./secrets/coordinator-keystore.p12
+  participant-keystore:
+    file: ./secrets/participant-keystore.p12
+  trust-store:
+    file: ./secrets/trust-store.p12
+  frontend-cert:
+    file: ./secrets/frontend.crt
+  frontend-key:
+    file: ./secrets/frontend.key

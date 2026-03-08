@@ -1,0 +1,118 @@
+default:
+  image: eclipse-temurin:21-jdk
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+stages:
+  - build
+  - test
+  - analyze
+  - docs
+
+.maven-cache: &maven-cache
+  cache:
+    key: 'maven-$CI_COMMIT_REF_SLUG'
+    paths:
+      - $CI_PROJECT_DIR/.m2/repository
+    policy: pull-push
+
+.node-cache: &node-cache
+  cache:
+    key: 'node-$CI_COMMIT_REF_SLUG'
+    paths:
+      - frontend/node_modules/
+    policy: pull-push
+
+backend:
+  stage: build
+  <<: *maven-cache
+  variables:
+    MAVEN_OPTS: '-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository'
+  script:
+    - cd backend
+    - mvn --batch-mode --no-transfer-progress install -Dcheckstyle.skip=true
+    - mvn --batch-mode --no-transfer-progress dependency:copy-dependencies -DincludeScope=runtime
+  artifacts:
+    when: always
+    paths:
+      - backend/*/target/site/jacoco/
+      - backend/coordinator/target/classes/
+      - backend/participant/target/classes/
+      - backend/common/target/classes/
+      - backend/coordinator/target/dependency/
+      - backend/participant/target/dependency/
+      - backend/common/target/dependency/
+      - backend/coordinator/target/surefire-reports/
+      - backend/participant/target/surefire-reports/
+      - backend/common/target/surefire-reports/
+    reports:
+      junit:
+        - backend/coordinator/target/surefire-reports/TEST-*.xml
+        - backend/participant/target/surefire-reports/TEST-*.xml
+        - backend/common/target/surefire-reports/TEST-*.xml
+    expire_in: 7 days
+
+frontend:
+  stage: build
+  image: node:20-alpine
+  <<: *node-cache
+  script:
+    - cd frontend
+    - npm ci
+    - npx tsc --noEmit
+    - npm run test -- --coverage --run
+  artifacts:
+    when: always
+    paths:
+      - frontend/coverage/
+    expire_in: 7 days
+
+sonarqube:
+  stage: analyze
+  image: eclipse-temurin:21-jdk
+  needs:
+    - backend
+    - frontend
+  dependencies:
+    - backend
+    - frontend
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq curl
+    - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    - apt-get install -y -qq nodejs
+  script:
+    - >
+      npx --yes sonar-scanner
+      -Dsonar.host.url=$SONAR_HOST_URL
+      -Dsonar.token=$SONAR_TOKEN
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+docs:
+  stage: docs
+  <<: *maven-cache
+  image: eclipse-temurin:21-jdk
+  needs:
+    - backend
+    - frontend
+  variables:
+    MAVEN_OPTS: '-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository'
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq curl
+    - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    - apt-get install -y -qq nodejs
+  script:
+    - cd backend && mvn --batch-mode --no-transfer-progress javadoc:aggregate -DskipTests && cd ..
+    - mkdir -p docs/backend
+    - cp -r backend/target/site/apidocs/. docs/backend/
+    - cd frontend && npm ci && npm run docs && cd ..
+  artifacts:
+    paths:
+      - docs/
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
