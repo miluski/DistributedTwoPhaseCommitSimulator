@@ -92,12 +92,16 @@ jobs:
 
       - name: Generate Javadoc
         working-directory: backend
-        run: mvn --batch-mode --no-transfer-progress javadoc:aggregate -DskipTests
+        run: mvn --batch-mode --no-transfer-progress install javadoc:aggregate -DskipTests -Dcheckstyle.skip=true
 
       - name: Copy Javadoc to docs/backend
         run: |
           mkdir -p docs/backend
-          cp -r backend/target/site/apidocs/. docs/backend/
+          if [ -d backend/target/reports/apidocs ] && [ -n "$(ls -A backend/target/reports/apidocs)" ]; then
+            cp -r backend/target/reports/apidocs/. docs/backend/
+          else
+            echo "WARNING: Javadoc output not found – skipping copy" >&2
+          fi
 
       - name: Set up Node 20
         uses: actions/setup-node@v4

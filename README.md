@@ -4,7 +4,7 @@ A fault-tolerant distributed system simulator implementing the **Two-Phase Commi
 with real-time fault injection, monitoring, and automated recovery mechanisms.
 
 Built with **Java 21 / Spring Boot 4.0.1** (backend) and **React 19 + TypeScript** (frontend),
-containerised with Docker Compose, analysed with SonarQube on a self-hosted Raspberry Pi 5 runner.
+containerised with Docker Compose, analysed with SonarQube on a self-hosted Raspberry Pi instance.
 
 ## Table of Contents
 
@@ -78,10 +78,10 @@ enter an _uncertain_ state. The system handles this via:
 | Frontend    | React 19, TypeScript strict, Vite, SockJS + STOMP, TailwindCSS |
 | Build       | Maven 3.9 (multi-module: common / coordinator / participant)   |
 | Container   | Docker, Docker Compose (8 services)                            |
-| CI/CD       | GitHub Actions (self-hosted runner on RPi 5)                   |
+| CI/CD       | GitHub Actions + GitLab CI                                     |
 | Quality     | SonarQube, Checkstyle (Google Java Style), JUnit 5, Mockito    |
 | Coverage    | JaCoCo (≥ 75 % enforced; actual > 99 %), Vitest                |
-| Docs        | JavaDoc, SpringDoc OpenAPI, Markdown                           |
+| Docs        | Javadoc, TypeDoc, SpringDoc OpenAPI, Markdown                  |
 
 ---
 
@@ -92,7 +92,9 @@ DistributedTwoPhaseCommitSimulator/
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml              # Build, test, Checkstyle on every push/PR
-│       └── sonarqube.yml       # SonarQube analysis (self-hosted RPi 5 runner)
+│       └── sonarqube.yml       # SonarQube analysis (GitHub-hosted runner)
+├── .gitlab/
+│   └── ci.yml                  # Equivalent GitLab CI pipeline
 ├── backend/
 │   ├── pom.xml                 # Parent Maven POM (multi-module)
 │   ├── common/                 # Shared DTOs, enums, Spring Web layer
@@ -103,7 +105,11 @@ DistributedTwoPhaseCommitSimulator/
 │   ├── architecture.md         # Detailed architecture and fault-tolerance design
 │   ├── schedule.md             # Project schedule and milestone tracking
 │   ├── api.md                  # Full REST API and WebSocket reference
-│   └── sonarqube-setup.md      # SonarQube on Raspberry Pi 5 setup guide
+│   ├── redundancy.md           # Redundancy and fault-tolerance analysis
+│   └── user-guide.md           # End-user guide (Polish)
+├── scripts/
+│   ├── init-dev.sh             # Generate TLS keystores and .env (run once)
+│   └── sonar.sh                # Run full SonarQube analysis locally
 ├── compose.yaml                # Full stack: coordinator + 6 participants + UI
 ├── sonar-project.properties    # SonarQube project configuration
 └── README.md
@@ -319,8 +325,7 @@ have two options:
 
 - Set `-DSSL_KEYSTORE_PATH=/path/to/your.p12` to point to a keystore whose Subject Alternative
   Names (SANs) include your LAN IPs.
-- Or generate new keystores with the correct SANs using the same `openssl` + `keytool` commands
-  from [docs/sonarqube-setup.md](docs/sonarqube-setup.md), then mount them at runtime.
+- Or generate new keystores with the correct SANs using `openssl` + `keytool`, then mount them at runtime.
 
 ### Frontend
 
@@ -469,22 +474,28 @@ export SONAR_TOKEN=sqp_...
 
 ## CI/CD Pipeline
 
-Every push and pull request triggers:
+Every push and pull request triggers the `backend` and `frontend` jobs (compile, test, coverage
+artifacts). On `main` push only:
 
-1. **`ci.yml`** (GitHub-hosted runner): compile → test → upload coverage (Checkstyle skipped)
-2. **`sonarqube.yml`** (self-hosted Raspberry Pi 5 runner): backend + frontend tests, then SonarQube scan with coverage import
-3. **`.gitlab-ci.yml`**: equivalent pipeline for GitLab CI (build, test, SonarQube, docs)
+1. **`ci.yml` `docs` job** (GitHub-hosted runner): generates Javadoc (backend) and TypeDoc
+   (frontend) and commits them to `docs/backend/` and `docs/frontend/`
+2. **`sonarqube.yml`** (GitHub-hosted runner): backend + frontend tests, then SonarQube scan
+   with coverage import
+3. **`.gitlab/ci.yml`**: equivalent pipeline for GitLab CI (build, test, SonarQube, docs)
 
-See [`.github/workflows/`](.github/workflows/) and [`.gitlab-ci.yml`](.gitlab-ci.yml) for details.
+See [`.github/workflows/`](.github/workflows/) and [`.gitlab/ci.yml`](.gitlab/ci.yml) for details.
 
 ---
 
 ## Documentation
 
-| Document            | Location                                           |
-| ------------------- | -------------------------------------------------- |
-| Architecture        | [docs/architecture.md](docs/architecture.md)       |
-| Project Schedule    | [docs/schedule.md](docs/schedule.md)               |
-| API Reference       | [docs/api.md](docs/api.md)                         |
-| Swagger UI (live)   | `https://localhost:<port>/swagger-ui.html`         |
-| JavaDoc (generated) | `backend/*/target/site/apidocs/`                   |
+| Document            | Location                                     |
+| ------------------- | -------------------------------------------- |
+| Architecture        | [docs/architecture.md](docs/architecture.md) |
+| Project Schedule    | [docs/schedule.md](docs/schedule.md)         |
+| API Reference       | [docs/api.md](docs/api.md)                   |
+| Redundancy Analysis | [docs/redundancy.md](docs/redundancy.md)     |
+| User Guide          | [docs/user-guide.md](docs/user-guide.md)     |
+| Swagger UI (live)   | `https://localhost:<port>/swagger-ui.html`   |
+| Javadoc (generated) | `docs/backend/` (committed on `main` push)   |
+| TypeDoc (generated) | `docs/frontend/` (committed on `main` push)  |

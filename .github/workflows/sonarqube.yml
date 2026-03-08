@@ -6,8 +6,8 @@ on:
 
 jobs:
   sonarqube:
-    name: Static analysis (self-hosted RPi 5)
-    runs-on: [self-hosted, linux, arm64]
+    name: Static analysis
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -44,6 +44,18 @@ jobs:
       - name: Run frontend tests with coverage
         working-directory: frontend
         run: npm run test -- --coverage --run
+
+      - name: Trust SonarQube self-signed certificate
+        run: |
+          SONAR_HOST=$(echo "${{ secrets.SONAR_HOST_URL }}" | sed 's|https\?://||' | cut -d: -f1)
+          SONAR_PORT=$(echo "${{ secrets.SONAR_HOST_URL }}" | sed 's|https\?://||' | grep -o ':[0-9]*' | tr -d ':')
+          SONAR_PORT=${SONAR_PORT:-443}
+          echo | openssl s_client -showcerts -servername "$SONAR_HOST" -connect "$SONAR_HOST:$SONAR_PORT" 2>/dev/null \
+            | openssl x509 -outform PEM > sonarqube-cert.pem
+          sudo keytool -import -trustcacerts \
+            -keystore "$JAVA_HOME/lib/security/cacerts" \
+            -storepass changeit -noprompt \
+            -alias sonarqube-server -file sonarqube-cert.pem
 
       - name: Run SonarQube scanner
         run: npx --yes sonar-scanner -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.token=${{ secrets.SONAR_TOKEN }}

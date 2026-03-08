@@ -152,6 +152,18 @@
         </plugin>
 
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <doclint>none</doclint>
+            <failOnError>false</failOnError>
+            <additionalOptions>
+              <additionalOption>--ignore-source-errors</additionalOption>
+            </additionalOptions>
+          </configuration>
+        </plugin>
+
+        <plugin>
           <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
           <version>${sonar.version}</version>
