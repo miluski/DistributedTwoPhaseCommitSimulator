@@ -1,0 +1,39 @@
+server:
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: ${SSL_KEYSTORE_PATH:classpath:ssl/coordinator-keystore.p12}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD:changeit}
+    key-store-type: PKCS12
+    key-alias: coordinator
+
+spring:
+  application:
+    name: coordinator
+
+coordinator:
+  prepare-timeout-ms: 3000
+  participant-urls:
+    - https://participant-1:8444
+    - https://participant-2:8445
+    - https://participant-3:8446
+    - https://participant-4:8447
+    - https://participant-5:8448
+    - https://participant-6:8449
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    com.distributed2pc: DEBUG
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+  api-docs:
+    path: /v3/api-docs

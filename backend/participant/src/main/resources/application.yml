@@ -1,0 +1,39 @@
+server:
+  port: ${SERVER_PORT:8444}
+  ssl:
+    enabled: true
+    key-store: ${SSL_KEYSTORE_PATH:classpath:ssl/participant-keystore.p12}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD:changeit}
+    key-store-type: PKCS12
+    key-alias: participant
+
+spring:
+  application:
+    name: participant-${SERVER_ID:1}
+
+participant:
+  server-id: ${SERVER_ID:server-1}
+  coordinator-url: ${COORDINATOR_URL:https://coordinator:8443}
+  peers: ${PARTICIPANT_PEERS:https://participant-1:8444,https://participant-2:8445,https://participant-3:8446,https://participant-4:8447,https://participant-5:8448,https://participant-6:8449}
+  recovery:
+    timeout-ms: ${RECOVERY_TIMEOUT_MS:5000}
+    interval-ms: ${RECOVERY_INTERVAL_MS:5000}
+  heartbeat:
+    interval-ms: ${HEARTBEAT_INTERVAL_MS:3000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    com.distributed2pc: DEBUG
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+  api-docs:
+    path: /v3/api-docs

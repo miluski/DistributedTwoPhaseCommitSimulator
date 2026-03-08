@@ -1,0 +1,27 @@
+package com.distributed2pc.common.enums;
+
+/**
+ * Significant events that flow through the system and are broadcast via
+ * WebSocket to the UI.
+ */
+public enum EventType {
+    TRANSACTION_STARTED,
+    PREPARE_SENT,
+    VOTE_RECEIVED,
+    ALL_VOTES_COLLECTED,
+    DECISION_MADE,
+    COMMIT_SENT,
+    ABORT_SENT,
+    TRANSACTION_COMPLETED,
+    TRANSACTION_TIMED_OUT,
+    COORDINATOR_CRASHED,
+    COORDINATOR_RECOVERED,
+    PARTICIPANT_CRASHED,
+    PARTICIPANT_RECOVERED,
+    ELECTION_STARTED,
+    ELECTION_RESULT,
+    PEER_CONSULTED,
+    FAULT_INJECTED,
+    FAULT_CLEARED,
+    PARTICIPANT_REGISTERED
+}
