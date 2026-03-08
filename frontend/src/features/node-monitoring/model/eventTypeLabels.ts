@@ -1,0 +1,22 @@
+/** Polish display labels for every {@link EventType} constant emitted by the backend. */
+export const EVENT_TYPE_LABELS: Record<string, string> = {
+  TRANSACTION_STARTED: 'Transakcja rozpoczęta',
+  PREPARE_SENT: 'Wysłano PREPARE',
+  VOTE_RECEIVED: 'Głos odebrany',
+  ALL_VOTES_COLLECTED: 'Zebrano głosy',
+  DECISION_MADE: 'Podjęto decyzję',
+  COMMIT_SENT: 'Wysłano COMMIT',
+  ABORT_SENT: 'Wysłano ABORT',
+  TRANSACTION_COMPLETED: 'Transakcja zakończona',
+  TRANSACTION_TIMED_OUT: 'Przekroczono czas',
+  COORDINATOR_CRASHED: 'Awaria koordynatora',
+  COORDINATOR_RECOVERED: 'Koordynator przywrócony',
+  PARTICIPANT_CRASHED: 'Awaria uczestnika',
+  PARTICIPANT_RECOVERED: 'Uczestnik przywrócony',
+  ELECTION_STARTED: 'Wybory rozpoczęte',
+  ELECTION_RESULT: 'Wynik wyborów',
+  PEER_CONSULTED: 'Konsultacja węzła',
+  FAULT_INJECTED: 'Błąd wstrzyknięty',
+  FAULT_CLEARED: 'Błąd wyczyszczony',
+  PARTICIPANT_REGISTERED: 'Uczestnik zarejestrowany',
+};
