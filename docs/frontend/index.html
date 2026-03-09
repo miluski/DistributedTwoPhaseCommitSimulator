@@ -1,0 +1,548 @@
+<!DOCTYPE html><html class="default" lang="en"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>DistributedTwoPhaseCommitSimulator</title><meta name="description" content="Documentation for DistributedTwoPhaseCommitSimulator"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search" data-base="."><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">DistributedTwoPhaseCommitSimulator</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>DistributedTwoPhaseCommitSimulator</h1></div><div class="tsd-panel tsd-typography"><a id="md:distributedtwophasecommitsimulator" class="tsd-anchor"></a><h1 class="tsd-anchor-link">DistributedTwoPhaseCommitSimulator<a href="#md:distributedtwophasecommitsimulator" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><p>A fault-tolerant distributed system simulator implementing the <strong>Two-Phase Commit (2PC)</strong> protocol
+with real-time fault injection, monitoring, and automated recovery mechanisms.</p>
+<p>Built with <strong>Java 21 / Spring Boot 4.0.1</strong> (backend) and <strong>React 19 + TypeScript</strong> (frontend),
+containerised with Docker Compose, analysed with SonarQube on a self-hosted Raspberry Pi instance.</p>
+<a id="md:table-of-contents" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Table of Contents<a href="#md:table-of-contents" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li><a href="#md:architecture-overview">Architecture Overview</a></li>
+<li><a href="#md:tech-stack">Tech Stack</a></li>
+<li><a href="#md:project-structure">Project Structure</a></li>
+<li><a href="#md:quick-start">Quick Start</a></li>
+<li><a href="#md:tls-certificates">TLS Certificates</a></li>
+<li><a href="#md:running-individual-services">Running Individual Services</a></li>
+<li><a href="#md:fault-injection">Fault Injection</a></li>
+<li><a href="#md:api-reference">API Reference</a></li>
+<li><a href="#md:testing">Testing</a></li>
+<li><a href="#md:local-sonarqube-analysis">Local SonarQube Analysis</a></li>
+<li><a href="#md:cicd-pipeline">CI/CD Pipeline</a></li>
+<li><a href="#md:documentation">Documentation</a></li>
+</ul>
+<hr>
+<a id="md:architecture-overview" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Architecture Overview<a href="#md:architecture-overview" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><pre><code><span class="hl-0">┌─────────────────────────────────────────────────────────────────┐</span><br/><span class="hl-0">│                     </span><span class="hl-1">React</span><span class="hl-0"> </span><span class="hl-2">UI</span><span class="hl-0">  (:</span><span class="hl-3">3000</span><span class="hl-0"> </span><span class="hl-4">HTTPS</span><span class="hl-0">)                      │</span><br/><span class="hl-0">│   </span><span class="hl-1">Dashboard</span><span class="hl-0"> │ </span><span class="hl-1">Transaction</span><span class="hl-0"> </span><span class="hl-1">Panel</span><span class="hl-0"> │ </span><span class="hl-1">Fault</span><span class="hl-0"> </span><span class="hl-1">Injection</span><span class="hl-0"> │ </span><span class="hl-1">Event</span><span class="hl-0"> </span><span class="hl-1">Log</span><span class="hl-0">   │</span><br/><span class="hl-0">└──────────────────────┬──────────────────────────────────────────┘</span><br/><span class="hl-0">                       │  </span><span class="hl-4">HTTPS</span><span class="hl-0"> </span><span class="hl-4">REST</span><span class="hl-0"> + </span><span class="hl-1">WebSocket</span><span class="hl-0">/</span><span class="hl-2">TLS</span><span class="hl-0"> (</span><span class="hl-4">STOMP</span><span class="hl-0">)</span><br/><span class="hl-0">┌──────────────────────▼──────────────────────────────────────────┐</span><br/><span class="hl-0">│               </span><span class="hl-2">Coordinator</span><span class="hl-0">  (:</span><span class="hl-3">8443</span><span class="hl-0"> </span><span class="hl-4">HTTPS</span><span class="hl-0">)                         │</span><br/><span class="hl-0">│   - </span><span class="hl-1">Initiates</span><span class="hl-0"> 2</span><span class="hl-4">PC</span><span class="hl-0"> </span><span class="hl-1">transactions</span><span class="hl-0">                                   │</span><br/><span class="hl-0">│   - </span><span class="hl-1">Phase</span><span class="hl-0"> </span><span class="hl-3">1</span><span class="hl-0">: </span><span class="hl-4">PREPARE</span><span class="hl-0"> → </span><span class="hl-1">collects</span><span class="hl-0"> </span><span class="hl-1">votes</span><span class="hl-0">                           │</span><br/><span class="hl-0">│   - </span><span class="hl-1">Phase</span><span class="hl-0"> </span><span class="hl-3">2</span><span class="hl-0">: </span><span class="hl-4">COMMIT</span><span class="hl-0"> / </span><span class="hl-4">ABORT</span><span class="hl-0"> → </span><span class="hl-1">broadcast</span><span class="hl-0"> </span><span class="hl-1">decision</span><span class="hl-0">                │</span><br/><span class="hl-0">│   - </span><span class="hl-1">Can</span><span class="hl-0"> </span><span class="hl-1">be</span><span class="hl-0"> </span><span class="hl-1">simulated</span><span class="hl-0"> </span><span class="hl-5">as</span><span class="hl-0"> </span><span class="hl-6">crashed</span><span class="hl-0"> (</span><span class="hl-6">coordinator</span><span class="hl-0"> </span><span class="hl-6">fault</span><span class="hl-0"> </span><span class="hl-6">tolerance</span><span class="hl-0">)    │</span><br/><span class="hl-0">│   - </span><span class="hl-1">Broadcasts</span><span class="hl-0"> </span><span class="hl-1">system</span><span class="hl-0"> </span><span class="hl-1">events</span><span class="hl-0"> </span><span class="hl-1">via</span><span class="hl-0"> </span><span class="hl-1">WebSocket</span><span class="hl-0">                       │</span><br/><span class="hl-0">└──────┬────────┬────────┬────────┬────────┬────────┬────────────┘</span><br/><span class="hl-0">       │        │        │        │        │        │</span><br/><span class="hl-0"> </span><span class="hl-4">HTTPS</span><span class="hl-0"> │  </span><span class="hl-4">HTTPS</span><span class="hl-0"> │  </span><span class="hl-4">HTTPS</span><span class="hl-0"> │  </span><span class="hl-4">HTTPS</span><span class="hl-0"> │  </span><span class="hl-4">HTTPS</span><span class="hl-0"> │  </span><span class="hl-4">HTTPS</span><span class="hl-0"> │</span><br/><span class="hl-0">       ▼        ▼        ▼        ▼        ▼        ▼</span><br/><span class="hl-0">  ┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐</span><br/><span class="hl-0">  │</span><span class="hl-1">Server</span><span class="hl-0"> </span><span class="hl-3">1</span><span class="hl-0">││</span><span class="hl-1">Server</span><span class="hl-0"> </span><span class="hl-3">2</span><span class="hl-0">││</span><span class="hl-1">Server</span><span class="hl-0"> </span><span class="hl-3">3</span><span class="hl-0">││</span><span class="hl-1">Server</span><span class="hl-0"> </span><span class="hl-3">4</span><span class="hl-0">││</span><span class="hl-1">Server</span><span class="hl-0"> </span><span class="hl-3">5</span><span class="hl-0">││</span><span class="hl-1">Server</span><span class="hl-0"> </span><span class="hl-3">6</span><span class="hl-0">│</span><br/><span class="hl-0">  │ :</span><span class="hl-3">8444</span><span class="hl-0">  ││ :</span><span class="hl-3">8445</span><span class="hl-0">  ││ :</span><span class="hl-3">8446</span><span class="hl-0">  ││ :</span><span class="hl-3">8447</span><span class="hl-0">  ││ :</span><span class="hl-3">8448</span><span class="hl-0">  ││ :</span><span class="hl-3">8449</span><span class="hl-0">  │</span><br/><span class="hl-0">  └────────┘└────────┘└────────┘└────────┘└────────┘└────────┘</span>
+</code><button>Copy</button></pre>
+
+<p>The system consists of:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Coordinator</strong></td>
+<td>Manages the 2PC protocol; single point that can be simulated as failed</td>
+</tr>
+<tr>
+<td><strong>Server 1–6</strong></td>
+<td>2PC participants; each is an independent Spring Boot process</td>
+</tr>
+<tr>
+<td><strong>React UI</strong></td>
+<td>Real-time dashboard connecting via WebSocket + REST</td>
+</tr>
+</tbody>
+</table>
+<a id="md:coordinator-fault-tolerance" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Coordinator Fault Tolerance<a href="#md:coordinator-fault-tolerance" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>When the coordinator crashes mid-transaction (after Phase 1 but before Phase 2), participants
+enter an <em>uncertain</em> state. The system handles this via:</p>
+<ol>
+<li><strong>Election</strong> – Participants elect a new coordinator using a simple ring-based algorithm.</li>
+<li><strong>Log-based recovery</strong> – Each participant persists its vote to a local log before responding.</li>
+<li><strong>Peer consultation</strong> – Participants query each other to determine if any has already received
+a COMMIT or ABORT decision and replicate it.</li>
+</ol>
+<hr>
+<a id="md:tech-stack" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Tech Stack<a href="#md:tech-stack" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend</td>
+<td>Java 21, Spring Boot 4.0.1, Spring Web, WebSocket, Reactor</td>
+</tr>
+<tr>
+<td>API Docs</td>
+<td>SpringDoc OpenAPI 2.8.5 (Swagger UI at <code>/swagger-ui.html</code>)</td>
+</tr>
+<tr>
+<td>Persistence</td>
+<td>In-memory store per participant (ConcurrentHashMap)</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>React 19, TypeScript strict, Vite, SockJS + STOMP, TailwindCSS</td>
+</tr>
+<tr>
+<td>Build</td>
+<td>Maven 3.9 (multi-module: common / coordinator / participant)</td>
+</tr>
+<tr>
+<td>Container</td>
+<td>Docker, Docker Compose (8 services)</td>
+</tr>
+<tr>
+<td>CI/CD</td>
+<td>GitHub Actions + GitLab CI</td>
+</tr>
+<tr>
+<td>Quality</td>
+<td>SonarQube, Checkstyle (Google Java Style), JUnit 5, Mockito</td>
+</tr>
+<tr>
+<td>Coverage</td>
+<td>JaCoCo (≥ 75 % enforced; actual &gt; 99 %), Vitest</td>
+</tr>
+<tr>
+<td>Docs</td>
+<td>Javadoc, TypeDoc, SpringDoc OpenAPI, Markdown</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<a id="md:project-structure" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Project Structure<a href="#md:project-structure" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><pre><code><span class="hl-1">DistributedTwoPhaseCommitSimulator</span><span class="hl-0">/</span><br/><span class="hl-0">├── .</span><span class="hl-1">github</span><span class="hl-0">/</span><br/><span class="hl-0">│   └── </span><span class="hl-1">workflows</span><span class="hl-0">/</span><br/><span class="hl-0">│       ├── </span><span class="hl-1">ci</span><span class="hl-0">.</span><span class="hl-1">yml</span><span class="hl-0">              # </span><span class="hl-1">Build</span><span class="hl-0">, </span><span class="hl-1">test</span><span class="hl-0">, </span><span class="hl-1">Checkstyle</span><span class="hl-0"> </span><span class="hl-1">on</span><span class="hl-0"> </span><span class="hl-1">every</span><span class="hl-0"> </span><span class="hl-1">push</span><span class="hl-0">/</span><span class="hl-4">PR</span><br/><span class="hl-0">│       └── </span><span class="hl-1">sonarqube</span><span class="hl-0">.</span><span class="hl-1">yml</span><span class="hl-0">       # </span><span class="hl-1">SonarQube</span><span class="hl-0"> </span><span class="hl-2">analysis</span><span class="hl-0"> (</span><span class="hl-1">GitHub</span><span class="hl-0">-</span><span class="hl-1">hosted</span><span class="hl-0"> </span><span class="hl-1">runner</span><span class="hl-0">)</span><br/><span class="hl-0">├── .</span><span class="hl-1">gitlab</span><span class="hl-0">/</span><br/><span class="hl-0">│   └── </span><span class="hl-1">ci</span><span class="hl-0">.</span><span class="hl-1">yml</span><span class="hl-0">                  # </span><span class="hl-1">Equivalent</span><span class="hl-0"> </span><span class="hl-1">GitLab</span><span class="hl-0"> </span><span class="hl-4">CI</span><span class="hl-0"> </span><span class="hl-1">pipeline</span><br/><span class="hl-0">├── </span><span class="hl-1">backend</span><span class="hl-0">/</span><br/><span class="hl-0">│   ├── </span><span class="hl-1">pom</span><span class="hl-0">.</span><span class="hl-1">xml</span><span class="hl-0">                 # </span><span class="hl-1">Parent</span><span class="hl-0"> </span><span class="hl-1">Maven</span><span class="hl-0"> </span><span class="hl-2">POM</span><span class="hl-0"> (</span><span class="hl-1">multi</span><span class="hl-0">-</span><span class="hl-6">module</span><span class="hl-0">)</span><br/><span class="hl-0">│   ├── </span><span class="hl-1">common</span><span class="hl-0">/                 # </span><span class="hl-1">Shared</span><span class="hl-0"> </span><span class="hl-1">DTOs</span><span class="hl-0">, </span><span class="hl-1">enums</span><span class="hl-0">, </span><span class="hl-1">Spring</span><span class="hl-0"> </span><span class="hl-1">Web</span><span class="hl-0"> </span><span class="hl-1">layer</span><br/><span class="hl-0">│   ├── </span><span class="hl-1">coordinator</span><span class="hl-0">/            # 2</span><span class="hl-4">PC</span><span class="hl-0"> </span><span class="hl-1">coordinator</span><span class="hl-0"> </span><span class="hl-2">service</span><span class="hl-0">  (:</span><span class="hl-3">8443</span><span class="hl-0"> </span><span class="hl-4">HTTPS</span><span class="hl-0">)</span><br/><span class="hl-0">│   └── </span><span class="hl-1">participant</span><span class="hl-0">/            # 2</span><span class="hl-4">PC</span><span class="hl-0"> </span><span class="hl-1">participant</span><span class="hl-0"> </span><span class="hl-2">template</span><span class="hl-0">  (:</span><span class="hl-3">8444</span><span class="hl-0">–:</span><span class="hl-3">8449</span><span class="hl-0"> </span><span class="hl-4">HTTPS</span><span class="hl-0">)</span><br/><span class="hl-0">├── </span><span class="hl-1">frontend</span><span class="hl-0">/                   # </span><span class="hl-1">React</span><span class="hl-0"> </span><span class="hl-3">19</span><span class="hl-0"> + </span><span class="hl-1">Vite</span><span class="hl-0"> </span><span class="hl-2">application</span><span class="hl-0">  (:</span><span class="hl-3">5173</span><span class="hl-0"> </span><span class="hl-4">HTTPS</span><span class="hl-0">)</span><br/><span class="hl-0">├── </span><span class="hl-1">docs</span><span class="hl-0">/</span><br/><span class="hl-0">│   ├── </span><span class="hl-1">architecture</span><span class="hl-0">.</span><span class="hl-1">md</span><span class="hl-0">         # </span><span class="hl-1">Detailed</span><span class="hl-0"> </span><span class="hl-1">architecture</span><span class="hl-0"> </span><span class="hl-1">and</span><span class="hl-0"> </span><span class="hl-1">fault</span><span class="hl-0">-</span><span class="hl-1">tolerance</span><span class="hl-0"> </span><span class="hl-1">design</span><br/><span class="hl-0">│   ├── </span><span class="hl-1">schedule</span><span class="hl-0">.</span><span class="hl-1">md</span><span class="hl-0">             # </span><span class="hl-1">Project</span><span class="hl-0"> </span><span class="hl-1">schedule</span><span class="hl-0"> </span><span class="hl-1">and</span><span class="hl-0"> </span><span class="hl-1">milestone</span><span class="hl-0"> </span><span class="hl-1">tracking</span><br/><span class="hl-0">│   ├── </span><span class="hl-1">api</span><span class="hl-0">.</span><span class="hl-1">md</span><span class="hl-0">                  # </span><span class="hl-1">Full</span><span class="hl-0"> </span><span class="hl-4">REST</span><span class="hl-0"> </span><span class="hl-4">API</span><span class="hl-0"> </span><span class="hl-1">and</span><span class="hl-0"> </span><span class="hl-1">WebSocket</span><span class="hl-0"> </span><span class="hl-1">reference</span><br/><span class="hl-0">│   ├── </span><span class="hl-1">redundancy</span><span class="hl-0">.</span><span class="hl-1">md</span><span class="hl-0">           # </span><span class="hl-1">Redundancy</span><span class="hl-0"> </span><span class="hl-1">and</span><span class="hl-0"> </span><span class="hl-1">fault</span><span class="hl-0">-</span><span class="hl-1">tolerance</span><span class="hl-0"> </span><span class="hl-1">analysis</span><br/><span class="hl-0">│   └── </span><span class="hl-1">user</span><span class="hl-0">-</span><span class="hl-1">guide</span><span class="hl-0">.</span><span class="hl-1">md</span><span class="hl-0">           # </span><span class="hl-1">End</span><span class="hl-0">-</span><span class="hl-1">user</span><span class="hl-0"> </span><span class="hl-2">guide</span><span class="hl-0"> (</span><span class="hl-1">Polish</span><span class="hl-0">)</span><br/><span class="hl-0">├── </span><span class="hl-1">scripts</span><span class="hl-0">/</span><br/><span class="hl-0">│   ├── </span><span class="hl-1">init</span><span class="hl-0">-</span><span class="hl-1">dev</span><span class="hl-0">.</span><span class="hl-1">sh</span><span class="hl-0">             # </span><span class="hl-1">Generate</span><span class="hl-0"> </span><span class="hl-4">TLS</span><span class="hl-0"> </span><span class="hl-1">keystores</span><span class="hl-0"> </span><span class="hl-1">and</span><span class="hl-0"> .</span><span class="hl-2">env</span><span class="hl-0"> (</span><span class="hl-1">run</span><span class="hl-0"> </span><span class="hl-1">once</span><span class="hl-0">)</span><br/><span class="hl-0">│   └── </span><span class="hl-1">sonar</span><span class="hl-0">.</span><span class="hl-1">sh</span><span class="hl-0">                # </span><span class="hl-1">Run</span><span class="hl-0"> </span><span class="hl-1">full</span><span class="hl-0"> </span><span class="hl-1">SonarQube</span><span class="hl-0"> </span><span class="hl-1">analysis</span><span class="hl-0"> </span><span class="hl-1">locally</span><br/><span class="hl-0">├── </span><span class="hl-1">compose</span><span class="hl-0">.</span><span class="hl-1">yaml</span><span class="hl-0">                # </span><span class="hl-1">Full</span><span class="hl-0"> </span><span class="hl-7">stack</span><span class="hl-0">: </span><span class="hl-1">coordinator</span><span class="hl-0"> + </span><span class="hl-3">6</span><span class="hl-0"> </span><span class="hl-1">participants</span><span class="hl-0"> + </span><span class="hl-4">UI</span><br/><span class="hl-0">├── </span><span class="hl-1">sonar</span><span class="hl-0">-</span><span class="hl-1">project</span><span class="hl-0">.</span><span class="hl-1">properties</span><span class="hl-0">    # </span><span class="hl-1">SonarQube</span><span class="hl-0"> </span><span class="hl-1">project</span><span class="hl-0"> </span><span class="hl-1">configuration</span><br/><span class="hl-0">└── </span><span class="hl-4">README</span><span class="hl-0">.</span><span class="hl-1">md</span>
+</code><button>Copy</button></pre>
+
+<hr>
+<a id="md:quick-start" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Quick Start<a href="#md:quick-start" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="md:prerequisites" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Prerequisites<a href="#md:prerequisites" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li>Java 21+</li>
+<li>Node.js 20+</li>
+<li>Docker &amp; Docker Compose</li>
+<li>Maven 3.9+</li>
+</ul>
+<a id="md:start-everything-with-docker-compose" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Start everything with Docker Compose<a href="#md:start-everything-with-docker-compose" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="bash"><span class="hl-2">git</span><span class="hl-0"> </span><span class="hl-8">clone</span><span class="hl-0"> </span><span class="hl-8">https://github.com/</span><span class="hl-0">&lt;</span><span class="hl-8">your-or</span><span class="hl-0">g&gt;</span><span class="hl-8">/distributed-2pc-simulator.git</span><br/><span class="hl-2">cd</span><span class="hl-0"> </span><span class="hl-8">distributed-2pc-simulator</span><br/><br/><span class="hl-9"># Generate TLS keystores and create .env (run once; safe to re-run)</span><br/><span class="hl-2">bash</span><span class="hl-0"> </span><span class="hl-8">scripts/init-dev.sh</span><br/><br/><span class="hl-9"># Build and start all 8 containers</span><br/><span class="hl-2">docker</span><span class="hl-0"> </span><span class="hl-8">compose</span><span class="hl-0"> </span><span class="hl-8">up</span><span class="hl-0"> </span><span class="hl-10">--build</span>
+</code><button type="button">Copy</button></pre>
+
+<blockquote>
+<p>The <code>init-dev.sh</code> script generates PKCS12 keystores for the coordinator and participants
+under <code>secrets/</code> and writes matching passwords to <code>.env</code>. Re-running it preserves existing
+keystores and reuses the password already stored in <code>.env</code>.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>URL</th>
+<th>Service</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://localhost:3000" target="_blank" class="external">https://localhost:3000</a></td>
+<td>React UI (HTTPS, nginx + self-signed cert)</td>
+</tr>
+<tr>
+<td><a href="https://localhost:8443/api" target="_blank" class="external">https://localhost:8443/api</a></td>
+<td>Coordinator REST API</td>
+</tr>
+<tr>
+<td><a href="https://localhost:8444" target="_blank" class="external">https://localhost:8444</a>–8449</td>
+<td>Participant APIs</td>
+</tr>
+</tbody>
+</table>
+<p>All endpoints use self-signed certificates. Accept the browser security warning on first visit,
+or import <code>secrets/coordinator-keystore.p12</code> / participant keystores into your system trust store.</p>
+<hr>
+<a id="md:tls-certificates" class="tsd-anchor"></a><h2 class="tsd-anchor-link">TLS Certificates<a href="#md:tls-certificates" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Every service uses PKCS12 self-signed certificates generated by <code>scripts/init-dev.sh</code>.
+All certificates are stored in the <code>secrets/</code> directory and are <strong>never committed to git</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Common Name</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>secrets/coordinator-keystore.p12</code></td>
+<td><code>coordinator</code></td>
+<td>Coordinator HTTPS</td>
+</tr>
+<tr>
+<td><code>secrets/participant-keystore.p12</code></td>
+<td><code>participant</code></td>
+<td>All six participants HTTPS</td>
+</tr>
+<tr>
+<td><code>secrets/trust-store.p12</code></td>
+<td>—</td>
+<td>JVM trust store (both services)</td>
+</tr>
+</tbody>
+</table>
+<a id="md:regenerate-certificates" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Regenerate certificates<a href="#md:regenerate-certificates" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Delete the old files and re-run the init script. The script is idempotent — it skips keystores
+that already exist, so delete only what you want to regenerate:</p>
+<pre><code class="bash"><span class="hl-9"># Remove all secrets and generate fresh ones</span><br/><span class="hl-2">rm</span><span class="hl-0"> </span><span class="hl-10">-f</span><span class="hl-0"> </span><span class="hl-8">secrets/coordinator-keystore.p12</span><span class="hl-0"> </span><span class="hl-8">secrets/participant-keystore.p12</span><span class="hl-0"> </span><span class="hl-8">secrets/trust-store.p12</span><br/><span class="hl-2">bash</span><span class="hl-0"> </span><span class="hl-8">scripts/init-dev.sh</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The script automatically:</p>
+<ol>
+<li>Generates a new random password and writes it to <code>.env</code>.</li>
+<li>Creates <code>coordinator-keystore.p12</code> with a self-signed cert (<code>CN=coordinator</code>).</li>
+<li>Creates <code>participant-keystore.p12</code> with a self-signed cert (<code>CN=participant</code>).</li>
+<li>Exports both certificates and bundles them into <code>trust-store.p12</code> so that Spring
+services can verify each other's TLS connections at runtime.</li>
+</ol>
+<a id="md:trust-the-certificates-in-your-browser" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Trust the certificates in your browser<a href="#md:trust-the-certificates-in-your-browser" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>All services use self-signed certificates, so browsers will show a security warning.</p>
+<p><strong>Option A — accept the warning per tab (fastest for development)</strong></p>
+<p>Visit each URL once and click through the &quot;Your connection is not private&quot; warning:</p>
+<pre><code><span class="hl-7">https</span><span class="hl-0">:</span><span class="hl-9">//localhost:3000   (React UI)</span><br/><span class="hl-7">https</span><span class="hl-0">:</span><span class="hl-9">//localhost:8443   (Coordinator)</span><br/><span class="hl-7">https</span><span class="hl-0">:</span><span class="hl-9">//localhost:8444 … https://localhost:8449   (Participants)</span>
+</code><button>Copy</button></pre>
+
+<p><strong>Option B — add as trusted CA (recommended for sustained use)</strong></p>
+<p><em>macOS / Safari / Chrome on macOS:</em></p>
+<pre><code class="bash"><span class="hl-9"># Extract the DER certificate from the PKCS12 keystore</span><br/><span class="hl-1">KEYSTORE_PASS</span><span class="hl-0">=$(</span><span class="hl-2">grep</span><span class="hl-0"> </span><span class="hl-8">COORDINATOR_KEYSTORE_PASSWORD</span><span class="hl-0"> </span><span class="hl-8">.env</span><span class="hl-0"> | </span><span class="hl-2">cut</span><span class="hl-0"> </span><span class="hl-10">-d=</span><span class="hl-0"> </span><span class="hl-10">-f2</span><span class="hl-0">)</span><br/><span class="hl-2">keytool</span><span class="hl-0"> </span><span class="hl-10">-export</span><span class="hl-0"> </span><span class="hl-10">-alias</span><span class="hl-0"> </span><span class="hl-8">coordinator</span><span class="hl-0"> </span><span class="hl-10">-keystore</span><span class="hl-0"> </span><span class="hl-8">secrets/coordinator-keystore.p12</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-storepass</span><span class="hl-0"> </span><span class="hl-8">&quot;</span><span class="hl-1">$KEYSTORE_PASS</span><span class="hl-8">&quot;</span><span class="hl-0"> </span><span class="hl-10">-file</span><span class="hl-0"> </span><span class="hl-8">/tmp/coordinator.crt</span><span class="hl-0"> </span><span class="hl-10">-rfc</span><br/><br/><span class="hl-9"># Add to the macOS System Keychain and mark as trusted</span><br/><span class="hl-2">sudo</span><span class="hl-0"> </span><span class="hl-8">security</span><span class="hl-0"> </span><span class="hl-8">add-trusted-cert</span><span class="hl-0"> </span><span class="hl-10">-d</span><span class="hl-0"> </span><span class="hl-10">-r</span><span class="hl-0"> </span><span class="hl-8">trustRoot</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-k</span><span class="hl-0"> </span><span class="hl-8">/Library/Keychains/System.keychain</span><span class="hl-0"> </span><span class="hl-8">/tmp/coordinator.crt</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Repeat with <code>participant-keystore.p12</code> (alias <code>participant</code>) if you access participant endpoints
+directly in the browser.</p>
+<p><em>Windows (PowerShell, run as Administrator):</em></p>
+<pre><code class="powershell">$pass = (Get-Content .env | Select-String 'COORDINATOR_KEYSTORE_PASSWORD').Line.Split('=')[1]
+
+# Export the PEM certificate
+& keytool -export -alias coordinator -keystore secrets\coordinator-keystore.p12 `
+    -storepass $pass -file $env:TEMP\coordinator.crt -rfc
+
+# Import into Windows Trusted Root Certification Authorities
+Import-Certificate -FilePath "$env:TEMP\coordinator.crt" `
+    -CertStoreLocation Cert:\LocalMachine\Root
+</code><button type="button">Copy</button></pre>
+
+<p><em>Linux (curl / system CA bundle):</em></p>
+<pre><code class="bash"><span class="hl-1">KEYSTORE_PASS</span><span class="hl-0">=$(</span><span class="hl-2">grep</span><span class="hl-0"> </span><span class="hl-8">COORDINATOR_KEYSTORE_PASSWORD</span><span class="hl-0"> </span><span class="hl-8">.env</span><span class="hl-0"> | </span><span class="hl-2">cut</span><span class="hl-0"> </span><span class="hl-10">-d=</span><span class="hl-0"> </span><span class="hl-10">-f2</span><span class="hl-0">)</span><br/><span class="hl-2">keytool</span><span class="hl-0"> </span><span class="hl-10">-export</span><span class="hl-0"> </span><span class="hl-10">-alias</span><span class="hl-0"> </span><span class="hl-8">coordinator</span><span class="hl-0"> </span><span class="hl-10">-keystore</span><span class="hl-0"> </span><span class="hl-8">secrets/coordinator-keystore.p12</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-storepass</span><span class="hl-0"> </span><span class="hl-8">&quot;</span><span class="hl-1">$KEYSTORE_PASS</span><span class="hl-8">&quot;</span><span class="hl-0"> </span><span class="hl-10">-file</span><span class="hl-0"> </span><span class="hl-8">/usr/local/share/ca-certificates/coordinator.crt</span><span class="hl-0"> </span><span class="hl-10">-rfc</span><br/><span class="hl-2">sudo</span><span class="hl-0"> </span><span class="hl-8">update-ca-certificates</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:use-the-trust-store-with-external-java-tools" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Use the trust store with external Java tools<a href="#md:use-the-trust-store-with-external-java-tools" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>If you call the API from any Java process outside Docker (e.g. a test script), point it at the
+pre-built trust store:</p>
+<pre><code class="bash"><span class="hl-1">KEYSTORE_PASS</span><span class="hl-0">=$(</span><span class="hl-2">grep</span><span class="hl-0"> </span><span class="hl-8">COORDINATOR_KEYSTORE_PASSWORD</span><span class="hl-0"> </span><span class="hl-8">.env</span><span class="hl-0"> | </span><span class="hl-2">cut</span><span class="hl-0"> </span><span class="hl-10">-d=</span><span class="hl-0"> </span><span class="hl-10">-f2</span><span class="hl-0">)</span><br/><span class="hl-2">java</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-Djavax.net.ssl.trustStore=secrets/trust-store.p12</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-Djavax.net.ssl.trustStorePassword=</span><span class="hl-8">&quot;</span><span class="hl-1">$KEYSTORE_PASS</span><span class="hl-8">&quot;</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-Djavax.net.ssl.trustStoreType=PKCS12</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-jar</span><span class="hl-0"> </span><span class="hl-8">your-client.jar</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:certificates-in-docker-compose" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Certificates in Docker Compose<a href="#md:certificates-in-docker-compose" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>The <code>JAVA_TOOL_OPTIONS</code> environment variable in <code>compose.yaml</code> passes the trust store path
+to every JVM container automatically, so coordinator ↔ participant TLS validation works
+without any additional steps when using <code>docker compose up</code>.</p>
+<hr>
+<a id="md:running-individual-services" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Running Individual Services<a href="#md:running-individual-services" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="md:backend-single-machine--development" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Backend (single machine / development)<a href="#md:backend-single-machine--development" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="bash"><span class="hl-2">cd</span><span class="hl-0"> </span><span class="hl-8">backend</span><br/><br/><span class="hl-9"># Build all modules</span><br/><span class="hl-2">mvn</span><span class="hl-0"> </span><span class="hl-8">clean</span><span class="hl-0"> </span><span class="hl-8">package</span><span class="hl-0"> </span><span class="hl-10">-DskipTests</span><br/><br/><span class="hl-9"># Start coordinator (default port 8443, HTTPS)</span><br/><span class="hl-2">java</span><span class="hl-0"> </span><span class="hl-10">-jar</span><span class="hl-0"> </span><span class="hl-8">coordinator/target/coordinator-</span><span class="hl-10">*</span><span class="hl-8">.jar</span><br/><br/><span class="hl-9"># Start participant instances (each with a different SERVER_ID and PORT)</span><br/><span class="hl-1">SERVER_ID</span><span class="hl-0">=</span><span class="hl-8">server-1</span><span class="hl-0"> </span><span class="hl-1">SERVER_PORT</span><span class="hl-0">=</span><span class="hl-8">8444</span><span class="hl-0"> </span><span class="hl-2">java</span><span class="hl-0"> </span><span class="hl-10">-jar</span><span class="hl-0"> </span><span class="hl-8">participant/target/participant-</span><span class="hl-10">*</span><span class="hl-8">.jar</span><br/><span class="hl-1">SERVER_ID</span><span class="hl-0">=</span><span class="hl-8">server-2</span><span class="hl-0"> </span><span class="hl-1">SERVER_PORT</span><span class="hl-0">=</span><span class="hl-8">8445</span><span class="hl-0"> </span><span class="hl-2">java</span><span class="hl-0"> </span><span class="hl-10">-jar</span><span class="hl-0"> </span><span class="hl-8">participant/target/participant-</span><span class="hl-10">*</span><span class="hl-8">.jar</span><br/><span class="hl-9"># ... repeat for server-3 through server-6 on ports 8446–8449</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="md:backend-on-a-real-lan-one-process-per-physical-machine" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Backend on a real LAN (one process per physical machine)<a href="#md:backend-on-a-real-lan-one-process-per-physical-machine" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Because participants self-register, the only requirement is that each machine runs Java 21
+and can reach the coordinator over HTTPS.</p>
+<p><strong>Coordinator machine</strong> (e.g. <code>192.168.1.10</code>):</p>
+<pre><code class="bash"><span class="hl-2">java</span><span class="hl-0"> </span><span class="hl-10">-jar</span><span class="hl-0"> </span><span class="hl-8">coordinator/target/coordinator-</span><span class="hl-10">*</span><span class="hl-8">.jar</span><br/><span class="hl-9"># No extra flags needed — participants announce themselves at startup.</span>
+</code><button type="button">Copy</button></pre>
+
+<p><strong>Each participant machine</strong> (replace IPs and IDs to match your network):</p>
+<pre><code class="bash"><span class="hl-9"># Machine 192.168.1.11 — first participant</span><br/><span class="hl-2">java</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-DSERVER_ID=server-1</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-DSERVER_PORT=8444</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-DCOORDINATOR_URL=https://192.168.1.10:8443</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-Dparticipant.host=192.168.1.11</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-8">&quot;-DPARTICIPANT_PEERS=https://192.168.1.11:8444,https://192.168.1.12:8444,https://192.168.1.13:8444,https://192.168.1.14:8444,https://192.168.1.15:8444,https://192.168.1.16:8444&quot;</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-jar</span><span class="hl-0"> </span><span class="hl-8">participant/target/participant-</span><span class="hl-10">*</span><span class="hl-8">.jar</span>
+</code><button type="button">Copy</button></pre>
+
+<blockquote>
+<p>All six participant URLs must be listed in <code>PARTICIPANT_PEERS</code> as a single comma-separated
+string — one per physical machine, all on the same port (8444 by default). Spring's <code>@Value</code>
+binding splits the string on commas automatically.</p>
+</blockquote>
+<blockquote>
+<p><strong><code>-Dparticipant.host</code></strong> must be set to the machine's own LAN IP (or hostname).
+This is the address the coordinator will use to send PREPARE / COMMIT / ABORT requests.
+Without it, participants register as <code>localhost</code> and the coordinator cannot reach them.</p>
+</blockquote>
+<p><strong>Startup order:</strong></p>
+<ol>
+<li>Start the coordinator first and wait until you see <code>Started CoordinatorApplication</code>.</li>
+<li>Start each participant — each will log <code>Registered with coordinator as server-N on port XXXX</code>.</li>
+<li>Open the React UI and confirm all nodes appear in the dashboard.</li>
+</ol>
+<p><strong>SSL on LAN:</strong> The embedded keystores (<code>classpath:ssl/participant-keystore.p12</code>) contain
+self-signed certificates issued for the <code>participant</code> hostname. To use real IP addresses you
+have two options:</p>
+<ul>
+<li>Set <code>-DSSL_KEYSTORE_PATH=/path/to/your.p12</code> to point to a keystore whose Subject Alternative
+Names (SANs) include your LAN IPs.</li>
+<li>Or generate new keystores with the correct SANs using <code>openssl</code> + <code>keytool</code>, then mount them at runtime.</li>
+</ul>
+<a id="md:frontend" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Frontend<a href="#md:frontend" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="bash"><span class="hl-2">cd</span><span class="hl-0"> </span><span class="hl-8">frontend</span><br/><span class="hl-2">npm</span><span class="hl-0"> </span><span class="hl-8">install</span><br/><span class="hl-2">npm</span><span class="hl-0"> </span><span class="hl-8">run</span><span class="hl-0"> </span><span class="hl-8">dev</span><span class="hl-0">        </span><span class="hl-9"># https://localhost:5173  (Vite self-signed cert, accept browser warning)</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The production Docker image (<code>frontend/Dockerfile</code>) serves the built static assets via
+<strong>nginx with a self-signed TLS certificate</strong> generated at image build time. The UI is
+accessible at <code>https://localhost:3000</code> when running with Docker Compose.</p>
+<hr>
+<a id="md:fault-injection" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Fault Injection<a href="#md:fault-injection" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The UI and REST API expose two independent fault injection surfaces: one for the coordinator and
+one per participant. Every node supports at least six distinct fault types.</p>
+<a id="md:participant-faults-all-six-participants-independently-configurable" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Participant faults (all six participants independently configurable)<a href="#md:participant-faults-all-six-participants-independently-configurable" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>Fault Type</th>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Node Crash</strong></td>
+<td><code>CRASH</code></td>
+<td>Node returns HTTP 503 to every incoming request</td>
+</tr>
+<tr>
+<td><strong>Network Delay</strong></td>
+<td><code>NETWORK_DELAY</code></td>
+<td>Adds configurable latency (ms) before sending any response</td>
+</tr>
+<tr>
+<td><strong>Vote Manipulation</strong></td>
+<td><code>FORCE_ABORT_VOTE</code></td>
+<td>Forces the participant to vote NO on the next transaction(s)</td>
+</tr>
+<tr>
+<td><strong>Message Loss</strong></td>
+<td><code>MESSAGE_LOSS</code></td>
+<td>Drops outbound messages with a configured probability</td>
+</tr>
+<tr>
+<td><strong>Transient Fault</strong></td>
+<td><code>TRANSIENT</code></td>
+<td>Fault active for a fixed duration, then auto-recovers</td>
+</tr>
+<tr>
+<td><strong>Intermittent Fault</strong></td>
+<td><code>INTERMITTENT</code></td>
+<td>Fault toggles on/off at a configurable interval</td>
+</tr>
+</tbody>
+</table>
+<a id="md:coordinator-faults" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Coordinator faults<a href="#md:coordinator-faults" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>Fault Type</th>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Coordinator Crash</strong></td>
+<td><code>CRASH</code></td>
+<td>Coordinator stops processing incoming requests</td>
+</tr>
+<tr>
+<td><strong>Partial Send</strong></td>
+<td><code>PARTIAL_SEND</code></td>
+<td>Phase-2 COMMIT sent to only N of M participants</td>
+</tr>
+<tr>
+<td><strong>Delayed Decision</strong></td>
+<td><code>DELAYED_DECISION</code></td>
+<td>Artificially delays the Phase-2 broadcast</td>
+</tr>
+<tr>
+<td><strong>Message Loss</strong></td>
+<td><code>MESSAGE_LOSS</code></td>
+<td>Phase-2 sent to exactly N participants (configurable)</td>
+</tr>
+<tr>
+<td><strong>Network Delay</strong></td>
+<td><code>NETWORK_DELAY</code></td>
+<td>Adds latency to all coordinator outbound HTTP calls</td>
+</tr>
+</tbody>
+</table>
+<p>Inject a fault via REST:</p>
+<pre><code class="bash"><span class="hl-9"># Crash participant 2</span><br/><span class="hl-2">curl</span><span class="hl-0"> </span><span class="hl-10">-X</span><span class="hl-0"> </span><span class="hl-8">POST</span><span class="hl-0"> </span><span class="hl-8">https://localhost:8445/api/faults</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-H</span><span class="hl-0"> </span><span class="hl-8">&quot;Content-Type: application/json&quot;</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-d</span><span class="hl-0"> </span><span class="hl-8">&#39;{&quot;type&quot;:&quot;CRASH&quot;,&quot;enabled&quot;:true}&#39;</span><br/><br/><span class="hl-9"># Restore participant 2</span><br/><span class="hl-2">curl</span><span class="hl-0"> </span><span class="hl-10">-X</span><span class="hl-0"> </span><span class="hl-8">POST</span><span class="hl-0"> </span><span class="hl-8">https://localhost:8445/api/faults</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-H</span><span class="hl-0"> </span><span class="hl-8">&quot;Content-Type: application/json&quot;</span><span class="hl-0"> </span><span class="hl-11">\</span><br/><span class="hl-0">  </span><span class="hl-10">-d</span><span class="hl-0"> </span><span class="hl-8">&#39;{&quot;type&quot;:&quot;CRASH&quot;,&quot;enabled&quot;:false}&#39;</span>
+</code><button type="button">Copy</button></pre>
+
+<hr>
+<a id="md:scenario-benchmark" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Scenario Benchmark<a href="#md:scenario-benchmark" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>The frontend's <strong>Scenario Benchmark</strong> panel provides 16 automated fault-tolerance test scenarios
+grouped into five categories. Each scenario runs end-to-end against the live system, compares
+before/after metrics, and returns a <code>PASS</code>, <code>DEGRADED</code>, or <code>FAIL</code> verdict with a step log.</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Scenarios</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Baseline</strong></td>
+<td>Happy path commit, unanimous NO vote</td>
+</tr>
+<tr>
+<td><strong>Single Fault</strong></td>
+<td>Participant crash, network delay, force-abort vote, transient fault,</td>
+</tr>
+<tr>
+<td></td>
+<td>intermittent fault (80% drop), partial Phase-2 send</td>
+</tr>
+<tr>
+<td><strong>Compound (Cascading)</strong></td>
+<td>Half participants crash simultaneously; crash + delay cascade;</td>
+</tr>
+<tr>
+<td></td>
+<td>coordinator delay + participant crash; all participants delayed;</td>
+</tr>
+<tr>
+<td></td>
+<td>intermittent + force-abort on two nodes simultaneously</td>
+</tr>
+<tr>
+<td><strong>Extreme</strong></td>
+<td>Coordinator silent after Phase 1 — worst-case split-brain scenario</td>
+</tr>
+<tr>
+<td><strong>Redundancy Comparison</strong></td>
+<td>Identical Phase-2-silent scenario with redundancy OFF vs ON — directly</td>
+</tr>
+<tr>
+<td></td>
+<td>demonstrates the value of the fault-tolerant recovery mechanism</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>Redundancy Comparison</strong> category is the direct implementation of the requirement
+<em>&quot;compare system behaviour with and without redundancy under the same fault scenarios&quot;</em>:</p>
+<ul>
+<li><strong>Redundancy OFF</strong>: participants remain stuck in PREPARING indefinitely (no auto-recovery).</li>
+<li><strong>Redundancy ON</strong>: the recovery scheduler resolves the uncertain state via peer election
+within the configured 5-second timeout.</li>
+</ul>
+<hr>
+<a id="md:api-reference" class="tsd-anchor"></a><h2 class="tsd-anchor-link">API Reference<a href="#md:api-reference" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>See <a href="media/api.md">docs/api.md</a> for the full REST API reference.
+Swagger UI is available at <code>https://localhost:&lt;port&gt;/swagger-ui.html</code> when any service is running.</p>
+<a id="md:key-endpoints" class="tsd-anchor"></a><h3 class="tsd-anchor-link">Key endpoints<a href="#md:key-endpoints" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><table>
+<thead>
+<tr>
+<th>Method</th>
+<th>URL</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/api/transactions</code></td>
+<td>Initiate a new 2PC transaction</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/transactions</code></td>
+<td>List all transactions</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/transactions/{id}</code></td>
+<td>Get transaction details + vote matrix</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/participants</code></td>
+<td>List registered participants</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/coordinator/fault</code></td>
+<td>Inject fault into coordinator</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/coordinator/status</code></td>
+<td>Get coordinator state</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/faults</code></td>
+<td>Inject fault into participant</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/status</code></td>
+<td>Get participant state and active faults</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/metrics</code></td>
+<td>Transaction throughput and timing</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/simulation/config</code></td>
+<td>Toggle redundancy ON/OFF</td>
+</tr>
+</tbody>
+</table>
+<p>WebSocket endpoint: <code>wss://localhost:8443/ws</code>
+Subscribe to topic: <code>/topic/events</code></p>
+<hr>
+<a id="md:testing" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Testing<a href="#md:testing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><pre><code class="bash"><span class="hl-9"># Run all tests with coverage report (enforces ≥ 75 % threshold)</span><br/><span class="hl-2">cd</span><span class="hl-0"> </span><span class="hl-8">backend</span><br/><span class="hl-2">mvn</span><span class="hl-0"> </span><span class="hl-8">verify</span><span class="hl-0"> </span><span class="hl-10">-Dcheckstyle.skip=true</span><br/><br/><span class="hl-9"># Coverage HTML reports:</span><br/><span class="hl-9"># backend/common/target/site/jacoco/index.html</span><br/><span class="hl-9"># backend/coordinator/target/site/jacoco/index.html</span><br/><span class="hl-9"># backend/participant/target/site/jacoco/index.html</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Current coverage (all modules): <strong>&gt; 99 % line, instruction, and method coverage</strong>.
+JaCoCo checks are enforced at 75 % minimum; builds fail if coverage drops below this threshold.</p>
+<hr>
+<a id="md:local-sonarqube-analysis" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Local SonarQube Analysis<a href="#md:local-sonarqube-analysis" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Run the full analysis (backend + frontend build, tests, coverage, and SonarQube scan) with a single script:</p>
+<pre><code class="bash"><span class="hl-2">./scripts/sonar.sh</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The script prompts for the SonarQube URL and token interactively (token input is hidden).
+You can also pre-set them as environment variables to skip the prompts:</p>
+<pre><code class="bash"><span class="hl-10">export</span><span class="hl-0"> </span><span class="hl-1">SONAR_HOST_URL</span><span class="hl-0">=</span><span class="hl-1">https</span><span class="hl-0">://&lt;</span><span class="hl-1">sonarqube-host</span><span class="hl-0">&gt;:</span><span class="hl-1">9443</span><br/><span class="hl-10">export</span><span class="hl-0"> </span><span class="hl-1">SONAR_TOKEN</span><span class="hl-0">=</span><span class="hl-1">sqp_</span><span class="hl-0">...</span><br/><span class="hl-2">./scripts/sonar.sh</span>
+</code><button type="button">Copy</button></pre>
+
+<hr>
+<a id="md:cicd-pipeline" class="tsd-anchor"></a><h2 class="tsd-anchor-link">CI/CD Pipeline<a href="#md:cicd-pipeline" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Every push and pull request triggers the <code>backend</code> and <code>frontend</code> jobs (compile, test, coverage
+artifacts). On <code>main</code> push only:</p>
+<ol>
+<li><strong><code>ci.yml</code> <code>docs</code> job</strong> (GitHub-hosted runner): generates Javadoc (backend) and TypeDoc
+(frontend) and commits them to <code>docs/backend/</code> and <code>docs/frontend/</code></li>
+<li><strong><code>sonarqube.yml</code></strong> (GitHub-hosted runner): backend + frontend tests, then SonarQube scan
+with coverage import</li>
+<li><strong><code>.gitlab/ci.yml</code></strong>: equivalent pipeline for GitLab CI (build, test, SonarQube, docs)</li>
+</ol>
+<p>See <a href=".github/workflows/"><code>.github/workflows/</code></a> and <a href="media/ci.yml"><code>.gitlab/ci.yml</code></a> for details.</p>
+<hr>
+<a id="md:documentation" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Documentation<a href="#md:documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Architecture</td>
+<td><a href="media/architecture.md">docs/architecture.md</a></td>
+</tr>
+<tr>
+<td>Project Schedule</td>
+<td><a href="media/schedule.md">docs/schedule.md</a></td>
+</tr>
+<tr>
+<td>API Reference</td>
+<td><a href="media/api.md">docs/api.md</a></td>
+</tr>
+<tr>
+<td>Redundancy Analysis</td>
+<td><a href="media/redundancy.md">docs/redundancy.md</a></td>
+</tr>
+<tr>
+<td>User Guide</td>
+<td><a href="media/user-guide.md">docs/user-guide.md</a></td>
+</tr>
+<tr>
+<td>Swagger UI (live)</td>
+<td><code>https://localhost:&lt;port&gt;/swagger-ui.html</code></td>
+</tr>
+<tr>
+<td>Javadoc (generated)</td>
+<td><code>docs/backend/</code> (committed on <code>main</code> push)</td>
+</tr>
+<tr>
+<td>TypeDoc (generated)</td>
+<td><code>docs/frontend/</code> (committed on <code>main</code> push)</td>
+</tr>
+</tbody>
+</table>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#md:distributedtwophasecommitsimulator"><span>Distributed<wbr/>Two<wbr/>Phase<wbr/>Commit<wbr/>Simulator</span></a><ul><li><a href="#md:table-of-contents"><span>Table of <wbr/>Contents</span></a></li><li><a href="#md:architecture-overview"><span>Architecture <wbr/>Overview</span></a></li><li><ul><li><a href="#md:coordinator-fault-tolerance"><span>Coordinator <wbr/>Fault <wbr/>Tolerance</span></a></li></ul></li><li><a href="#md:tech-stack"><span>Tech <wbr/>Stack</span></a></li><li><a href="#md:project-structure"><span>Project <wbr/>Structure</span></a></li><li><a href="#md:quick-start"><span>Quick <wbr/>Start</span></a></li><li><ul><li><a href="#md:prerequisites"><span>Prerequisites</span></a></li><li><a href="#md:start-everything-with-docker-compose"><span>Start everything with <wbr/>Docker <wbr/>Compose</span></a></li></ul></li><li><a href="#md:tls-certificates"><span>TLS <wbr/>Certificates</span></a></li><li><ul><li><a href="#md:regenerate-certificates"><span>Regenerate certificates</span></a></li><li><a href="#md:trust-the-certificates-in-your-browser"><span>Trust the certificates in your browser</span></a></li><li><a href="#md:use-the-trust-store-with-external-java-tools"><span>Use the trust store with external <wbr/>Java tools</span></a></li><li><a href="#md:certificates-in-docker-compose"><span>Certificates in <wbr/>Docker <wbr/>Compose</span></a></li></ul></li><li><a href="#md:running-individual-services"><span>Running <wbr/>Individual <wbr/>Services</span></a></li><li><ul><li><a href="#md:backend-single-machine--development"><span>Backend (single machine / development)</span></a></li><li><a href="#md:backend-on-a-real-lan-one-process-per-physical-machine"><span>Backend on a real LAN (one process per physical machine)</span></a></li><li><a href="#md:frontend"><span>Frontend</span></a></li></ul></li><li><a href="#md:fault-injection"><span>Fault <wbr/>Injection</span></a></li><li><ul><li><a href="#md:participant-faults-all-six-participants-independently-configurable"><span>Participant faults (all six participants independently configurable)</span></a></li><li><a href="#md:coordinator-faults"><span>Coordinator faults</span></a></li></ul></li><li><a href="#md:scenario-benchmark"><span>Scenario <wbr/>Benchmark</span></a></li><li><a href="#md:api-reference"><span>API <wbr/>Reference</span></a></li><li><ul><li><a href="#md:key-endpoints"><span>Key endpoints</span></a></li></ul></li><li><a href="#md:testing"><span>Testing</span></a></li><li><a href="#md:local-sonarqube-analysis"><span>Local <wbr/>Sonar<wbr/>Qube <wbr/>Analysis</span></a></li><li><a href="#md:cicd-pipeline"><span>CI/CD <wbr/>Pipeline</span></a></li><li><a href="#md:documentation"><span>Documentation</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html" class="current"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="assets/icons.svg#icon-1"></use></svg><span>DistributedTwoPhaseCommitSimulator</span></a><ul class="tsd-small-nested-navigation" id="tsd-nav-container" data-base="."><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
